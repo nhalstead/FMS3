@@ -60,9 +60,9 @@ namespace FMS3
 		}
 
 		//
-		// Find all bricks attached to the system.
-		// "Attached" means they have been connected via Bluetooth (independent of this software).
-		// Different Bluetooth stacks store brick names, Bluetooth IDs, and associated COM ports differently - WMI vs. registry
+		/// Find all bricks attached to the system.
+		/// "Attached" means they have been connected via Bluetooth (independent of this software).
+		/// Different Bluetooth stacks store brick names, Bluetooth IDs, and associated COM ports differently - WMI vs. registry
 		//
 		public List<string> getListOfAttachedBricks()
 		{
@@ -86,7 +86,7 @@ namespace FMS3
 		}
 
 		//
-		// Locate all Bluetooth connections, where the devices are Mindstorms bricks, and identify the associated COM ports
+		/// Locate all Bluetooth connections, where the devices are Mindstorms bricks, and identify the associated COM ports
 		//
 		private static Dictionary<string, string> buildBtToComDict()
 		{
@@ -296,7 +296,7 @@ namespace FMS3
 		// Returns a reference to a 'generic brick' wrapper, given a brick name;
 		// attempts to reconnect the brick if it has been disconnected
 		//
-		public GenericBrick getBrickByName(string fullName, bool isEv3)
+		public GenericBrick getBrickByName(string fullName, bool isEv3, bool isFiveOne)
 		{
 			string name = stripExtensionFromName(fullName);
 
@@ -311,7 +311,7 @@ namespace FMS3
 			string newComPort = namesToComms[name];
 
 			// try to connect
-			GenericBrick newBrick = new GenericBrick(name, newComPort, isEv3);
+			GenericBrick newBrick = new GenericBrick(name, newComPort, isFiveOne,  isEv3);
 			if (newBrick.getState() > 0)
 			{
 				// add the brick to the dictionary
