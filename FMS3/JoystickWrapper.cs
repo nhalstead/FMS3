@@ -1,4 +1,4 @@
-﻿using SlimDX;
+using SlimDX;
 using SlimDX.DirectInput;
 using System.Collections.Generic;
 
@@ -65,28 +65,28 @@ namespace FMS3
 		public const int BUTTONCHOICE_POWERRESET = 7;
 
 		private static Dictionary<string, int> xmlIdToConst = null;
-		public const int STICK_XA = 0;
-		public const int STICK_YA = 1;
-		public const int STICK_ZA = 2;
-		public const int STICK_XR = 3;
-		public const int STICK_YR = 4;
-		public const int STICK_ZR = 5;
-		public const int STICK_S0 = 6;
-		public const int STICK_S1 = 7;
-		public const int STICK_P0 = 8;
+		public const int STICK_XA = 0; // Left Stick X
+		public const int STICK_YA = 1; // Left Stick Y
+		public const int STICK_ZA = 2; // Left Stick Z
+		public const int STICK_XR = 3; // Right Stick X
+		public const int STICK_YR = 4; // Right Stick Y
+		public const int STICK_ZR = 5; // Right Stick Z
+		public const int STICK_S0 = 6; // Slider 0
+		public const int STICK_S1 = 7; // Slider 1
+		public const int STICK_P0 = 8; // POV / D-Pad
 
 		private static void setupIdToConst()
 		{
 			xmlIdToConst = new Dictionary<string, int>();
-			xmlIdToConst.Add("XA", STICK_XA);
-			xmlIdToConst.Add("YA", STICK_YA);
-			xmlIdToConst.Add("ZA", STICK_ZA);
-			xmlIdToConst.Add("XR", STICK_XR);
-			xmlIdToConst.Add("YR", STICK_YR);
-			xmlIdToConst.Add("ZR", STICK_ZR);
-			xmlIdToConst.Add("S0", STICK_S0);
-			xmlIdToConst.Add("S1", STICK_S1);
-			xmlIdToConst.Add("P0", STICK_P0);
+			xmlIdToConst.Add("XA", STICK_XA); // Left Stick - X Axis (Horizontal)
+			xmlIdToConst.Add("YA", STICK_YA); // Left Stick - Y Axis (Vertical)
+			xmlIdToConst.Add("ZA", STICK_ZA); // Left Stick - Z Axis
+			xmlIdToConst.Add("XR", STICK_XR); // Right Stick - X Axis (Horizontal)
+			xmlIdToConst.Add("YR", STICK_YR); // Right Stick - Y Axis (Vertical)
+			xmlIdToConst.Add("ZR", STICK_ZR); // Right Stick - Z Axis
+			xmlIdToConst.Add("S0", STICK_S0); // Slider 0
+			xmlIdToConst.Add("S1", STICK_S1); // Slider 1
+			xmlIdToConst.Add("P0", STICK_P0); // Point of View (D-Pad)
 		}
 
 		// Constructor of the wrapper: Takes the GUID, the SlimDX Joystick object, and the various "how to read it" data

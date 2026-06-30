@@ -1,21 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <JoystickConfigs>
 	<JoystickConfig>
-		<Name>NoName</Name>
+		<Name>Default</Name>
+		<!-- Axis Mappings: Controls movement and fine adjustments -->
 		<Sticks>
-			<L_Motor>YA</L_Motor>
-			<R_Motor>ZR</R_Motor>
-			<FineMotor>P0</FineMotor>
+			<L_Motor>YA</L_Motor> <!-- Left Motor control (Y-Axis) -->
+			<R_Motor>ZR</R_Motor> <!-- Right Motor control (Rotation Z) -->
+			<FineMotor>P0</FineMotor> <!-- Fine movement control (D-Pad/POV) -->
 		</Sticks>
+		<!-- Buttons Map for Logitech Controller:
+			Button 0: A
+			Button 1: B
+			Button 2: X
+			Button 3: Y
+			Button 4: LB
+			Button 5: RB
+			Button 6: Back
+			Button 7: Start
+			Button 8: LThumb
+			Button 9: RThumb
+		-->
+		<!-- Button Mappings: Controls auxiliary motors and system states -->
 		<Buttons>
-			<A_MotorInc>04</A_MotorInc>
-			<A_MotorDec>05</A_MotorDec>
-			<D_MotorInc>06</D_MotorInc>
-			<D_MotorDec>07</D_MotorDec>
-			<ReverseToggle>09</ReverseToggle>
-			<PowerSelect>00</PowerSelect>
-			<GearSelect>02</GearSelect>
-			<PowerReset>03</PowerReset>
+			<A_MotorInc>04</A_MotorInc> <!-- Increase Motor A power -->
+			<A_MotorDec>05</A_MotorDec> <!-- Decrease Motor A power -->
+			<D_MotorInc>06</D_MotorInc> <!-- Increase Motor D power -->
+			<D_MotorDec>07</D_MotorDec> <!-- Decrease Motor D power -->
+			<ReverseToggle>09</ReverseToggle> <!-- Toggle Forward/Reverse orientation -->
+			<PowerSelect>00</PowerSelect> <!-- Cycle through Action Motor power levels -->
+			<GearSelect>02</GearSelect> <!-- Cycle through Drive Motor gear levels -->
+			<PowerReset>03</PowerReset> <!-- Reset power and gear levels to default -->
 		</Buttons>
 	</JoystickConfig>
 	<JoystickConfig>
