@@ -1,4 +1,4 @@
-﻿using SlimDX.DirectInput;
+using SlimDX.DirectInput;
 using System;
 using System.Collections.Generic;
 using System.Xml;
@@ -18,10 +18,7 @@ namespace FMS3
 		private JoystickConfigBean defaultBean;
 		private Dictionary<string, JoystickWrapper> joysticksByGuid = new Dictionary<string, JoystickWrapper>();
 
-		private Joystick joystick;
-		private JoystickState state = new JoystickState();
-		//private int numPOVs;
-		//private int SliderCount;
+		private DirectInput dinput = new DirectInput();
 
 		private JoystickManager()
 		{
@@ -89,6 +86,7 @@ namespace FMS3
 					}
 				}
 			}
+			
 			// store the last bean?
 			if (bean != null)
 			{
@@ -148,47 +146,49 @@ namespace FMS3
 		// Need the 'form' (the main window) so we know joysticks should be read when the main windoiw is in the foreground [I think]
 		public void scanForJoysticks(System.Windows.Forms.Form form)
 		{
-			// make sure that DirectInput has been initialized
-			DirectInput dinput = new DirectInput();
-
 			// search for devices
-			string thisGuid = "";
 			foreach (DeviceInstance device in dinput.GetDevices(DeviceClass.GameController, DeviceEnumerationFlags.AttachedOnly))
 			{
 				// create the device
 				try
 				{
-					joystick = new Joystick(dinput, device.InstanceGuid);
-					joystick.SetCooperativeLevel(form, CooperativeLevel.Exclusive | CooperativeLevel.Background);
+					Joystick tempJoystick = new Joystick(dinput, device.InstanceGuid);
+					tempJoystick.SetCooperativeLevel(form, CooperativeLevel.Nonexclusive | CooperativeLevel.Background);
 
-					thisGuid = device.InstanceGuid.ToString().Split('-')[0];
+					string thisGuid = device.InstanceGuid.ToString();
 					Console.WriteLine("DEBUG: scanForJoysticks(): device.InstanceGuid=" + thisGuid);
 
 					// is this a new joystick, not already in the map?
 					if (!joysticksByGuid.ContainsKey(thisGuid))
 					{
 						// set each axis to return data from -100 to 100
-						foreach (DeviceObjectInstance deviceObject in joystick.GetObjects())
+						foreach (DeviceObjectInstance deviceObject in tempJoystick.GetObjects())
 						{
 							// set the range from -100 to 100 ~ this is suitable for LEGO brick motor powers
 							if ((deviceObject.ObjectType & ObjectDeviceType.Axis) != 0)
-								joystick.GetObjectPropertiesById((int)deviceObject.ObjectType).SetRange(-100, 100);
+								tempJoystick.GetObjectPropertiesById((int)deviceObject.ObjectType).SetRange(-100, 100);
 						}
 
 						// acquire the device
-						joystick.Acquire();
+						tempJoystick.Acquire();
 
 						// use the default bean to start with
-						JoystickWrapper newWrapper = new JoystickWrapper(thisGuid, joystick,
+						JoystickWrapper newWrapper = new JoystickWrapper(thisGuid, tempJoystick,
 							defaultBean.lMotorChoiceString, defaultBean.rMotorChoiceString, defaultBean.fineMotorChoiceString,
 							defaultBean.buttonChoices);
 						joysticksByGuid.Add(thisGuid, newWrapper);
 
 						Console.WriteLine("DEBUG: Adding joystick at guid=" + thisGuid);
 					}
+					else
+					{
+						// already have it, can dispose of the temp object
+						tempJoystick.Dispose();
+					}
 				}
-				catch (DirectInputException)
+				catch (DirectInputException ex)
 				{
+					Console.WriteLine("DEBUG: scanForJoysticks() failed for a device: " + ex.Message);
 				}
 			}
 

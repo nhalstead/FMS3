@@ -20,10 +20,7 @@
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-	<Reference Include="SlimDX, Version=4.0.13.43, Culture=neutral, PublicKeyToken=b1b0c32fd1ffe4f9, processorArchitecture=x86">
-	  <SpecificVersion>False</SpecificVersion>
-	  <HintPath>..\SlimDX.dll</HintPath>
-	</Reference>
+    <Compile Include="..\FMS3\XInputReplacement.cs" Link="XInputReplacement.cs" />
 	<Reference Include="LibUsbDotNet">
 	  <HintPath>LibUsbDotNet.dll</HintPath>
 	</Reference>

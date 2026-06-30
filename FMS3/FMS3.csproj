@@ -36,10 +36,6 @@
 	<Reference Include="LibUsbDotNet">
 	  <HintPath>.\LibUsbDotNet.dll</HintPath>
 	</Reference>
-	<Reference Include="SlimDX, Version=4.0.13.43, Culture=neutral, PublicKeyToken=b1b0c32fd1ffe4f9, processorArchitecture=AMD64">
-	  <SpecificVersion>False</SpecificVersion>
-	  <HintPath>..\SlimDX.dll</HintPath>
-	</Reference>
   </ItemGroup>
   <ItemGroup>
 	<None Update="appProfile.xml">
@@ -62,6 +58,9 @@
 	</None>
 	<None Update="libusb-1.0.la">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+	<None Update="FiveOne\payload.py">
+	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	</None>
   </ItemGroup>
   <ItemGroup>
