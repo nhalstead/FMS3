@@ -1,4 +1,4 @@
-using SlimDX;
+﻿using SlimDX;
 using SlimDX.DirectInput;
 using System.Collections.Generic;
 

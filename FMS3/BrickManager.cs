@@ -219,8 +219,8 @@ namespace FMS3
 									string assocBdAddrHex = BitConverter.ToString(assocBdAddrReverse).Replace("-", string.Empty);
 									string BTaddress = assocBdAddrHex.Substring(4);
 
-									//Console.WriteLine("DEBUG: queryBtToNameFromRegistry() - >>>>BTaddress=" + BTaddress);
-									//Console.WriteLine("DEBUG: queryBtToNameFromRegistry() - >>>>brickName=" + brickName);
+									Console.WriteLine("DEBUG: queryBtToNameFromRegistry() - >>>>BTaddress=" + BTaddress);
+									Console.WriteLine("DEBUG: queryBtToNameFromRegistry() - >>>>brickName=" + brickName);
 
 									// Validate & add the BT/name pairing
 									checkAndAddBtNamePair(btToComDict, brickList, brickName, BTaddress);
@@ -302,16 +302,21 @@ namespace FMS3
 
 			// is it already connected?
 			if (namesToBricks.ContainsKey(name))
-				return namesToBricks[name];
+			{
+                return namesToBricks[name];
+            }
 
 			// is there a COM port associated?
 			if (!namesToComms.ContainsKey(name))
-				return null;
+			{
+                return null;
+            }
+
 			// what is the COM port
 			string newComPort = namesToComms[name];
 
 			// try to connect
-			GenericBrick newBrick = new GenericBrick(name, newComPort, isFiveOne,  isEv3);
+			GenericBrick newBrick = new GenericBrick(name, newComPort, isEv3, isFiveOne);
 			if (newBrick.getState() > 0)
 			{
 				// add the brick to the dictionary

@@ -2,6 +2,24 @@
 <JoystickConfigs>
 	<JoystickConfig>
 		<Name>Default</Name>
+		<Sticks>
+			<L_Motor>YA</L_Motor>
+			<R_Motor>YR</R_Motor>
+			<FineMotor>P0</FineMotor>
+		</Sticks>
+		<Buttons>
+			<A_MotorInc>04</A_MotorInc>
+			<A_MotorDec>05</A_MotorDec>
+			<D_MotorInc>06</D_MotorInc>
+			<D_MotorDec>07</D_MotorDec>
+			<ReverseToggle>09</ReverseToggle>
+			<PowerSelect>00</PowerSelect>
+			<GearSelect>02</GearSelect>
+			<PowerReset>03</PowerReset>
+		</Buttons>
+	</JoystickConfig>
+	<JoystickConfig>
+		<Name>No Name</Name>
 		<!-- Axis Mappings: Controls movement and fine adjustments -->
 		<Sticks>
 			<L_Motor>YA</L_Motor> <!-- Left Motor control (Y-Axis) -->
