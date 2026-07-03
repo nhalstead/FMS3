@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.IO.Ports;
 using System.Threading;
+using FMS3.Utilities;
 
 namespace MonoBrick.FiveOne;
 
@@ -49,15 +50,15 @@ public class Connector  {
      */
     public void interrupt() {
         for (int i = 0; i < 5; i++) {
-            if (debug) Console.WriteLine("DEBUG: Sending interrupt");
+            if (debug) Logger.Debug("Sending interrupt");
             send("\x03\r", false);
             Thread.Sleep(500);
-            if (debug) Console.WriteLine("DEBUG: There are " + sport.BytesToRead + " bytes to read");
+            if (debug) Logger.Debug("There are " + sport.BytesToRead + " bytes to read");
             if (sport.BytesToRead > 3) {
                 byte[] lastOnes = new byte[3];
                 sport.Read(new byte[sport.BytesToRead - 4], 0, sport.BytesToRead - 4);
                 sport.Read(lastOnes, 0 , 3);
-                if (debug) Console.WriteLine("DEBUG: The last 3 bytes were " + lastOnes[0] + " " + lastOnes[1] + " " + lastOnes[2]);
+                if (debug) Logger.Debug("The last 3 bytes were " + lastOnes[0] + " " + lastOnes[1] + " " + lastOnes[2]);
                 bool isThing = true;
                 foreach (byte b in lastOnes) {
                     if (b != 62) {
@@ -107,7 +108,7 @@ public class Connector  {
         if (sport.ReadBufferSize > 0) {
             byte[] inBytes = new byte[sport.ReadBufferSize];
             sport.Read(inBytes, 0, sport.ReadBufferSize);
-            Console.WriteLine(Encoding.UTF8.GetString(inBytes).Trim());
+            Logger.Info(Encoding.UTF8.GetString(inBytes).Trim());
         }
     }
     

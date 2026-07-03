@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using FMS3.Utilities;
 
 namespace MonoBrick.EV3
 {
@@ -413,15 +414,15 @@ namespace MonoBrick.EV3
 		/// <param name="subFoldersNames">Sub folders names</param>
 		public void GetFolderInfo(string path, out BrickFile[] files, out string[] subFoldersNames)
 		{
-			//Console.WriteLine("Get folder info at " +  path);
+			//Logger.Debug("Get folder info at " +  path);
 			var fileList = new List<BrickFile>();
 			var folderList = new List<string>();
 			string list = ListFiles(path, (UInt16)MaxBytesInFileList);
-			//Console.Write("Raw string: " + list);
+			//Logger.Debug("Raw string: " + list);
 			string[] element = list.Split(Environment.NewLine.ToCharArray());
 			foreach (string s in element)
 			{
-				//Console.WriteLine("Element:" + s);
+				//Logger.Debug("Element:" + s);
 				if (s.EndsWith("/"))
 				{
 					try
@@ -429,12 +430,12 @@ namespace MonoBrick.EV3
 						if (s != "../" && s != "./" && s != "/../" && s != "/./")
 						{
 							folderList.Add("/" + s.Remove(s.Length - 1));
-							//Console.WriteLine("Adding folder: "  + "/" + s.Remove(s.Length-1));
+							//Logger.Debug("Adding folder: "  + "/" + s.Remove(s.Length-1));
 						}
 					}
 					catch
 					{
-						//Console.WriteLine("Failed to add folder");	
+						//Logger.Debug("Failed to add folder");	
 					}
 				}
 				else
@@ -447,11 +448,11 @@ namespace MonoBrick.EV3
 							byte[] sizeBytes = System.Text.Encoding.ASCII.GetBytes(fileInfo[1]);
 							UInt32 fileSize = BitConverter.ToUInt32(sizeBytes, 0);
 							fileList.Add(new BrickFile(fileInfo[2], fileSize, path));
-							//Console.WriteLine("Adding file: "  + fileInfo[2] +  " with size " + fileSize);
+							//Logger.Debug("Adding file: "  + fileInfo[2] +  " with size " + fileSize);
 						}
 						catch
 						{
-							//Console.WriteLine("Failed to file");			
+							//Logger.Debug("Failed to file");			
 						}
 					}
 				}

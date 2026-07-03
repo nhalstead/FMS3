@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Xml;
+using FMS3.Utilities;
 
 namespace FMS3
 {
@@ -101,7 +102,7 @@ namespace FMS3
             // DEBUG
             foreach (JoystickConfigBean thisBean in configBeans.Values)
             {
-                Console.WriteLine("DEBUG: thisBean~" + thisBean.toString());
+                Logger.Debug("thisBean~" + thisBean.toString());
             }
         }
 
@@ -137,7 +138,7 @@ namespace FMS3
         public void setType(JoystickWrapper joystick, string type)
         {
             JoystickConfigBean configBean = configBeans[type];
-            Console.WriteLine("DEBUG: JoystickManager.setType() - configBean=" + configBean);
+            Logger.Debug("JoystickManager.setType() - configBean=" + configBean);
             if (joystick != null && configBean != null)
                 joystick.resetChoices(configBean.lMotorChoiceString, configBean.rMotorChoiceString, configBean.fineMotorChoiceString, configBean.buttonChoices);
         }
@@ -156,7 +157,7 @@ namespace FMS3
                     tempJoystick.SetCooperativeLevel(form, CooperativeLevel.Nonexclusive | CooperativeLevel.Background);
 
                     string thisGuid = device.InstanceGuid.ToString();
-                    Console.WriteLine("DEBUG: scanForJoysticks(): device.InstanceGuid=" + thisGuid);
+                    Logger.Debug("scanForJoysticks(): device.InstanceGuid=" + thisGuid);
 
                     // is this a new joystick, not already in the map?
                     if (!joysticksByGuid.ContainsKey(thisGuid))
@@ -178,7 +179,7 @@ namespace FMS3
                             defaultBean.buttonChoices);
                         joysticksByGuid.Add(thisGuid, newWrapper);
 
-                        Console.WriteLine("DEBUG: Adding joystick at guid=" + thisGuid);
+                        Logger.Debug("Adding joystick at guid=" + thisGuid);
                     }
                     else
                     {
@@ -188,14 +189,14 @@ namespace FMS3
                 }
                 catch (DirectInputException ex)
                 {
-                    Console.WriteLine("DEBUG: scanForJoysticks() failed for a device: " + ex.Message);
+                    Logger.Error("scanForJoysticks() failed for a device: " + ex.Message);
                 }
             }
 
             foreach (string listGuid in joysticksByGuid.Keys)
             {
                 JoystickWrapper thisWrapper = joysticksByGuid[listGuid];
-                Console.WriteLine("DEBUG: scanForJoysticks listGuid=" + listGuid + ", thisWrapper=" + thisWrapper);
+                Logger.Debug("scanForJoysticks listGuid=" + listGuid + ", thisWrapper=" + thisWrapper);
             }
         }
     }

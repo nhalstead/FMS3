@@ -1,4 +1,5 @@
 using System;
+using FMS3.Utilities;
 
 namespace MonoBrick.NXT
 {
@@ -155,11 +156,11 @@ namespace MonoBrick.NXT
 		internal void Print()
 		{
 			byte[] arr = Data;
-			Console.WriteLine("Command: " + CommandType);
-			Console.WriteLine("Length: " + Length);
+			Logger.Debug("Command: " + CommandType);
+			Logger.Debug("Length: " + Length);
 			for (int i = 0; i < Length; i++)
 			{
-				Console.WriteLine("Command[" + i + "]: " + arr[i].ToString("X"));
+				Logger.Debug("Command[" + i + "]: " + arr[i].ToString("X"));
 			}
 		}
 
@@ -342,12 +343,12 @@ namespace MonoBrick.NXT
 
 		internal void print()
 		{
-			Console.WriteLine("Command: " + CommandType.ToString());
-			Console.WriteLine("Length: " + Length);
-			Console.WriteLine("Errorcode: " + ErrorCode);
+			Logger.Debug("Command: " + CommandType.ToString());
+			Logger.Debug("Length: " + Length);
+			Logger.Debug("Errorcode: " + ErrorCode);
 			for (int i = 0; i < Length; i++)
 			{
-				Console.WriteLine("Reply[" + i + "]: " + dataArray[i].ToString("X"));
+				Logger.Debug("Reply[" + i + "]: " + dataArray[i].ToString("X"));
 			}
 
 		}

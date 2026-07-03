@@ -1,4 +1,5 @@
-﻿namespace FMS3
+﻿using FMS3.Utilities;
+namespace FMS3
 {
 	/*
 	 * Class for handling the pairing of a joystick with a brick.
@@ -74,10 +75,9 @@
 		//
 		public bool isValidPair()
 		{
-			/*
-			Console.WriteLine("DEBUG: isValidPair()1 - " + joystick + "," + brick);
+			//Logger.Debug("DEBUG: isValidPair()1 - " + joystick + "," + brick);
 			if (brick != null)
-				Console.WriteLine("DEBUG: isValidPair()2 - " + brick.getState());
+				Logger.Debug("DEBUG: isValidPair()2 - " + brick.getState());
 			 */
 			if (joystick != null && brick != null && brick.getState() > 0)
 				return true;

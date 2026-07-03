@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Management;
+using FMS3.Utilities;
 
 namespace FMS3
 {
@@ -69,7 +70,7 @@ namespace FMS3
 			Dictionary<string, string> btToComDict = buildBtToComDict();
 
 			//////////////////////////////////////
-			Console.WriteLine("DEBUG: getListOfAttachedBricks() **** Querying for Bluetooth<~>Name relationships {to build 'Name<~>COM' map}");
+            Logger.Debug("getListOfAttachedBricks() **** Querying for Bluetooth<~>Name relationships {to build 'Name<~>COM' map}");
 
 			// Try WMI query first
 			List<string> brickList = queryBtToNameFromWmi(btToComDict);
@@ -77,7 +78,7 @@ namespace FMS3
 			// If we found zero (0) bricks via WMI, try a registry query
 			if (brickList.Count == 0)
 			{
-				Console.WriteLine("DEBUG: getListOfAttachedBricks() !!! None found via WMI; trying Registry");
+                Logger.Debug("getListOfAttachedBricks() !!! None found via WMI; trying Registry");
 				brickList = queryBtToNameFromRegistry(btToComDict);
 			}
 
@@ -91,7 +92,7 @@ namespace FMS3
 		private static Dictionary<string, string> buildBtToComDict()
 		{
 			// Run a COM query to get the COM ports (in the 'Caption') for Mindstorms BT connections
-			Console.WriteLine("DEBUG: buildBtToCom() **** Querying for Bluetooth<~>COM relationships");
+            Logger.Debug("buildBtToCom() **** Querying for Bluetooth<~>COM relationships");
 			Dictionary<string, string> btToComDict = new Dictionary<string, string>();
 			const string ComQueryString = "SELECT Caption,PNPDeviceID FROM Win32_PnPEntity " +
 										"WHERE ConfigManagerErrorCode = 0 AND " +
@@ -103,7 +104,7 @@ namespace FMS3
 			// Did we get a result?
 			if (ComWMIqueryResults != null)
 			{
-				//Console.WriteLine("Com query... The following bricks were found on your system:");
+				//Logger.Debug("Com query... The following bricks were found on your system:");
 				foreach (object result in ComWMIqueryResults.Get())
 				{
 					ManagementObject mo = (ManagementObject)result;
@@ -119,17 +120,17 @@ namespace FMS3
 					string BTaddress = pnpIdObject.ToString().Split('&')[4].Substring(0, 12);
 
 					// add to dictionary
-					Console.WriteLine("DEBUG: buildBtToCom() - BTaddress=" + BTaddress + ",COM=" + comPort);
+                    Logger.Debug("buildBtToCom() - BTaddress=" + BTaddress + ",COM=" + comPort);
 					btToComDict.Add(BTaddress, comPort);
 
-					//Console.WriteLine("COM Port: {0} ", comPort);
-					//Console.WriteLine("BT Addr:  {0} ", BTaddress);
-					//Console.WriteLine("");
+					//Logger.Debug("COM Port: {0} ", comPort);
+					//Logger.Debug("BT Addr:  {0} ", BTaddress);
+					//Logger.Debug("");
 				}
 			}
 			else
 			{
-				Console.WriteLine("ERROR: buildBtToCom() - Error executing BT/com query");
+                Logger.Error("buildBtToCom() - Error executing BT/com query");
 			}
 			return btToComDict;
 		}
@@ -149,7 +150,7 @@ namespace FMS3
 			// Did we get results?
 			if (NameWMIqueryResults != null)
 			{
-				//Console.WriteLine("DEBUG: getListOfAttachedBricks() - Query... The following bricks were found on your system:");
+				//Logger.Debug("DEBUG: getListOfAttachedBricks() - Query... The following bricks were found on your system:");
 				foreach (object result in NameWMIqueryResults.Get())
 				{
 					ManagementObject mo = (ManagementObject)result;
@@ -168,7 +169,7 @@ namespace FMS3
 			}
 			else
 			{
-				Console.WriteLine("DEBUG: queryBtToNameFromWmi() - Error executing BT/name query");
+            Logger.Debug("queryBtToNameFromWmi() - Error executing BT/name query");
 			}
 			return brickList;
 		}
@@ -178,7 +179,7 @@ namespace FMS3
 		//
 		private List<string> queryBtToNameFromRegistry(Dictionary<string, string> btToComDict)
 		{
-			//Console.WriteLine("DEBUG: queryBtToNameFromRegistry() - ENTER");
+			//Logger.Debug("DEBUG: queryBtToNameFromRegistry() - ENTER");
 			List<string> brickList = new List<string>();
 
 			// We're going to be making cyclical calls into registry keys as we find them
@@ -187,12 +188,12 @@ namespace FMS3
 			{
 				foreach (String btSub1KeyName in btBaseRegKey.GetSubKeyNames())
 				{
-					//Console.WriteLine("DEBUG: queryBtToNameFromRegistry() - btSub1keyName=" + btSub1KeyName);
+					//Logger.Debug("DEBUG: queryBtToNameFromRegistry() - btSub1keyName=" + btSub1KeyName);
 					using (RegistryKey btSub1RegKey = btBaseRegKey.OpenSubKey(btSub1KeyName))
 					{
 						foreach (String btSub2KeyName in btSub1RegKey.GetSubKeyNames())
 						{
-							//Console.WriteLine("DEBUG: queryBtToNameFromRegistry() - **btSub2KeyName=" + btSub2KeyName);
+							//Logger.Debug("DEBUG: queryBtToNameFromRegistry() - **btSub2KeyName=" + btSub2KeyName);
 							using (RegistryKey btSub2RegKey = btSub1RegKey.OpenSubKey(btSub2KeyName))
 							{
 								// Get the brick name from the 'ServiceName' key
@@ -219,8 +220,8 @@ namespace FMS3
 									string assocBdAddrHex = BitConverter.ToString(assocBdAddrReverse).Replace("-", string.Empty);
 									string BTaddress = assocBdAddrHex.Substring(4);
 
-									Console.WriteLine("DEBUG: queryBtToNameFromRegistry() - >>>>BTaddress=" + BTaddress);
-									Console.WriteLine("DEBUG: queryBtToNameFromRegistry() - >>>>brickName=" + brickName);
+                                    Logger.Debug(">>>>BTaddress=" + BTaddress);
+                                    Logger.Debug(">>>>brickName=" + brickName);
 
 									// Validate & add the BT/name pairing
 									checkAndAddBtNamePair(btToComDict, brickList, brickName, BTaddress);
@@ -245,11 +246,11 @@ namespace FMS3
 			{
 				string comPort = btToComDict[BTaddress];
 
-				Console.WriteLine("DEBUG: checkAndAddBtNamePair() ~ BTaddress=" + BTaddress + ",brickName=" + brickName + "~" + comPort);
+                Logger.Debug("checkAndAddBtNamePair() ~ BTaddress=" + BTaddress + ",brickName=" + brickName + "~" + comPort);
 
 				if (!namesToComms.ContainsKey(brickName))
 				{
-					Console.WriteLine("DEBUG: checkAndAddBtNamePair() ~~ Adding new pair to namesToComms: " + brickName + "~" + comPort);
+                    Logger.Debug("checkAndAddBtNamePair() ~~ Adding new pair to namesToComms: " + brickName + "~" + comPort);
 					namesToComms.Add(brickName, comPort);
 				}
 
@@ -263,7 +264,7 @@ namespace FMS3
 				brickList.Add(listName);
 			}
 			else
-				Console.WriteLine("WARN: checkAndAddBtNamePair() - No COM port associated with BT=" + BTaddress + " ~ for name=" + brickName);
+            Logger.Warn("checkAndAddBtNamePair() - No COM port associated with BT=" + BTaddress + " ~ for name=" + brickName);
 		}
 
 		//
@@ -280,7 +281,7 @@ namespace FMS3
 		//
 		// Returns a reference to a 'generic brick' wrapper, given a brick name
 		//
-		public GenericBrick getBrickByName(string fullName)
+        public GenericBrick getBrickByName(string fullName)
 		{
 			string name = stripExtensionFromName(fullName);
 
@@ -301,14 +302,12 @@ namespace FMS3
 			string name = stripExtensionFromName(fullName);
 
 			// is it already connected?
-			if (namesToBricks.ContainsKey(name))
-			{
+			if (namesToBricks.ContainsKey(name)) {
                 return namesToBricks[name];
             }
 
 			// is there a COM port associated?
-			if (!namesToComms.ContainsKey(name))
-			{
+			if (!namesToComms.ContainsKey(name)) {
                 return null;
             }
 
@@ -316,12 +315,18 @@ namespace FMS3
 			string newComPort = namesToComms[name];
 
 			// try to connect
-			GenericBrick newBrick = new GenericBrick(name, newComPort, isEv3, isFiveOne);
-			if (newBrick.getState() > 0)
-			{
+			GenericBrick newBrick = null;
+            if (isEv3) {
+                newBrick = new Ev3Brick(name, newComPort);
+            } else if (isFiveOne) {
+                newBrick = new FiveOneBrick(name, newComPort);
+            } else {
+                newBrick = new NxtBrick(name, newComPort);
+            }
+
+			if (newBrick != null && newBrick.getState() > 0) {
 				// add the brick to the dictionary
 				namesToBricks.Add(name, newBrick);
-
 				return newBrick;
 			}
 

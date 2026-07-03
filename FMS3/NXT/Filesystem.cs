@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using FMS3.Utilities;
 
 namespace MonoBrick.NXT
 {
@@ -352,7 +353,7 @@ namespace MonoBrick.NXT
 			command.Append(file.Handle);
 			command.Append(data, offset, length);
 			connection.Send(command);
-			//Console.WriteLine(file.Size);
+						//Logger.Debug(file.Size.ToString());
 			//command.Print();
 			var reply = connection.Receive();
 			Error.CheckForError(reply, 6, delegate () { CloseFile(file); });

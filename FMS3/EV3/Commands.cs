@@ -1,4 +1,4 @@
-using System;
+using FMS3.Utilities;
 
 namespace MonoBrick.EV3
 {
@@ -877,7 +877,7 @@ namespace MonoBrick.EV3
 			byte[] arr = Data;
 			for (int i = 0; i < Length; i++)
 			{
-				Console.WriteLine("Command[" + i + "]: " + arr[i].ToString("X"));
+				Logger.Debug("Command[" + i + "]: " + arr[i].ToString("X"));
 			}
 		}
 
@@ -1037,12 +1037,12 @@ namespace MonoBrick.EV3
 
 		internal void print()
 		{
-			Console.WriteLine("Command: " + CommandType.ToString());
-			Console.WriteLine("Length: " + Length);
-			Console.WriteLine("Errorcode: " + ErrorCode);
+			Logger.Debug("Command: " + CommandType.ToString());
+			Logger.Debug("Length: " + Length);
+			Logger.Debug("Errorcode: " + ErrorCode);
 			for (int i = 0; i < Length; i++)
 			{
-				Console.WriteLine("Reply[" + i + "]: " + dataArray[i].ToString("X"));
+				Logger.Debug("Reply[" + i + "]: " + dataArray[i].ToString("X"));
 			}
 
 		}

@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using FMS3.Utilities;
 namespace MonoBrick.NXT
 {
 
@@ -499,7 +500,7 @@ namespace MonoBrick.NXT
 		public override void Initialize()
 		{
 			base.Initialize();
-			//Console.WriteLine("Check for single shot");
+						//Logger.Debug("Check for single shot");
 		}
 
 		/// <summary>

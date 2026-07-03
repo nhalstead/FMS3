@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using FMS3.Utilities;
 namespace MonoBrick.NXT
 {
 	#region Base Sensor
@@ -216,7 +217,7 @@ namespace MonoBrick.NXT
 		/// </summary>
 		virtual public void Initialize()
 		{
-			//Console.WriteLine("Sensor " + Port + " init");
+						//Logger.Debug("Sensor " + Port + " init");
 			if (connection != null && connection.IsConnected)
 			{
 				UpdateTypeAndMode(Type, Mode);

@@ -1,4 +1,5 @@
 using System;
+using FMS3.Utilities;
 
 namespace MonoBrick.NXT
 {
@@ -90,7 +91,7 @@ namespace MonoBrick.NXT
 		/// <seealso cref="SendClassicMotorCommand"/>
 		public void SendControlledMotorCommand(MotorControlMotorPort port, string power, string tachoLimit, char mode)
 		{
-			Console.WriteLine("Power = " + power + ", tachoLimit = " + tachoLimit);
+			Logger.Debug("Power = " + power + ", tachoLimit = " + tachoLimit);
 			string messageData = string.Format("{0}{1}{2}{3}{4}",
 				(byte)MotorControlCommandType.PROTO_CONTROLLED_MOTORCMD,
 				(byte)port,

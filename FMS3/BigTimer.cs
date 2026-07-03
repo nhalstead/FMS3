@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using FMS3.Utilities;
 
 namespace FMS3
 {
@@ -30,7 +31,7 @@ namespace FMS3
 			baseModeFontSize = modeLabel.Font.Size;
 			baseTimerFontSize = timerLabel.Font.Size;
 
-			//Console.WriteLine("DEBUG: BigTimer() - " + baseWinXsize + "," + baseWinYsize + "~" + baseXyRatio + ";" + baseModeFontSize + "," + baseTimerFontSize);
+			//Logger.Debug("DEBUG: BigTimer() - " + baseWinXsize + "," + baseWinYsize + "~" + baseXyRatio + ";" + baseModeFontSize + "," + baseTimerFontSize);
 		}
 
 		// DNGN methods
@@ -53,7 +54,7 @@ namespace FMS3
 			float newWinXsize = ClientRectangle.Width;
 			float newWinYsize = ClientRectangle.Height;
 			float newXyRatio = newWinXsize / newWinYsize;
-			//Console.WriteLine("DEBUG: BigTimer_ResizeEnd() - " + newWinXsize + "," + newWinYsize + "~" + newXyRatio);
+			//Logger.Debug("DEBUG: BigTimer_ResizeEnd() - " + newWinXsize + "," + newWinYsize + "~" + newXyRatio);
 
 			// Use either the X-size or the Y-size to figure out the correct font size
 			// (depending on if the window is tall but skinny, or if the window is very wide but short, etc.)
@@ -61,12 +62,12 @@ namespace FMS3
 			if (newXyRatio > baseXyRatio)
 			{
 				modRatio = newWinYsize / baseWinYsize;
-				//Console.WriteLine("DEBUG: BigTimer_ResizeEnd() - using Y sizes, mod=" + modRatio);
+				//Logger.Debug("DEBUG: BigTimer_ResizeEnd() - using Y sizes, mod=" + modRatio);
 			}
 			else
 			{
 				modRatio = newWinXsize / baseWinXsize;
-				//Console.WriteLine("DEBUG: BigTimer_ResizeEnd() - using X sizes, mod=" + modRatio);
+				//Logger.Debug("DEBUG: BigTimer_ResizeEnd() - using X sizes, mod=" + modRatio);
 			}
 
 			// 2014-01-20, M.O'C: Need this check here for Windows 7 startup

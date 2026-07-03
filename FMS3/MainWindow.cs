@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Media;
 using System.Windows.Forms;
 using System.Xml;
+using FMS3.Utilities;
 
 namespace FMS3
 {
@@ -26,6 +27,8 @@ namespace FMS3
         private TimeSpan resumeLength;
         // The target timestamp for the end of the period; at any given moment, the display shows 'endTime' minus 'now'
         private DateTime endTime;
+
+        private Stopwatch _mainStopwatch = new Stopwatch();
 
         // File names of the sounds to be loaded & played for different events (the actual names are read in from the XML)
         private string soundStart;
@@ -87,6 +90,8 @@ namespace FMS3
             Color.Coral, Color.LimeGreen, Color.Turquoise, Color.Yellow, Color.PaleGreen, Color.MediumOrchid
         };
 
+        private const long IO_TIMEOUT_MS = 500; // 500ms threshold for I/O operations
+
         // Caclulate individual 'ids' for each kind of transition
         // Used to determine what needs to change during each type of transition
         public const int TRANSITION_NOMATCH_TO_FREEDRIVE = MODE_NOMATCH * 100 + MODE_FREEDRIVE;
@@ -117,6 +122,8 @@ namespace FMS3
 
             //// C-sharp built-in?
             InitializeComponent();
+
+            _mainStopwatch.Start();
 
             // Read in the initial settings from an XML file
             // Whether various checkboxes start off checked, the initial amount of time for the periods, which sound files to use, etc.
@@ -186,7 +193,7 @@ namespace FMS3
                     }
                 }
             }
-            Console.WriteLine("DEBUG: MainWindow() - soundStart1=" + soundStart
+            Logger.Debug("MainWindow() - soundStart1=" + soundStart
                 + ",soundStart2=" + soundPause
                 + ",soundEnd=" + soundEnd
                 + ",soundAbort=" + soundAbort
@@ -250,7 +257,7 @@ namespace FMS3
 
             bigTimer.timerLabel.Text = time.ToString(@"m\:ss");
 
-            //Console.WriteLine("useTimeAnnounce && mode -> " + (useTimeAnnounce) +
+            //Logger.Debug("useTimeAnnounce && mode -> " + (useTimeAnnounce) +
             //	"; mode == MODE_AUTONOMOUS -> " + (mode == MODE_AUTONOMOUS) +
             //	"; timerLabel.Text.Equals(\"0:30\") -> " + timerLabel.Text.Equals("0:30") +
             //	"; did30sec == false -> " + (did30sec == false));
@@ -527,17 +534,17 @@ namespace FMS3
             // scan through the current pairs & remove matches
             for (int i = 0; i < 4; i++)
             {
-                Console.WriteLine("DEBUG: buttonUpdateJoysticks_Click() - scan i=" + i);
+                Logger.Debug("buttonUpdateJoysticks_Click() - scan i=" + i);
                 if (brickPairs[i].joystick != null)
                 {
-                    Console.WriteLine("DEBUG: buttonUpdateJoysticks_Click() - ...removing guid=" + brickPairs[i].guid + " at i=" + i);
+                    Logger.Debug("buttonUpdateJoysticks_Click() - ...removing guid=" + brickPairs[i].guid + " at i=" + i);
                     joysticksByGuidClone.Remove(brickPairs[i].guid);
                 }
             }
             // are any left?
             if (joysticksByGuidClone.Keys.Count > 0)
             {
-                Console.WriteLine("DEBUG: buttonUpdateJoysticks_Click() - Still have " + joysticksByGuidClone.Keys.Count);
+                Logger.Debug("buttonUpdateJoysticks_Click() - Still have " + joysticksByGuidClone.Keys.Count);
                 // add them to blank spaces
                 foreach (string addGuid in joysticksByGuidClone.Keys)
                 {
@@ -546,14 +553,14 @@ namespace FMS3
                         if (brickPairs[i].joystick == null)
                         {
                             // found a blank
-                            Console.WriteLine("DEBUG: buttonUpdateJoysticks_Click() - Found a blank @ i=" + i);
+                            Logger.Debug("buttonUpdateJoysticks_Click() - Found a blank @ i=" + i);
                             brickPairs[i].guid = addGuid;
                             brickPairs[i].joystick = joysticksByGuid[addGuid];
                             setComboType(i, joystickManager.getDefaultConfigBean().typeName);
                             setGuidLabel(i, addGuid);
                             setGuidLabelBackground(i, false);
 
-                            Console.WriteLine("DEBUG: buttonUpdateJoysticks_Click() - pair validity = " + brickPairs[i].isValidPair());
+                            Logger.Debug("buttonUpdateJoysticks_Click() - pair validity = " + brickPairs[i].isValidPair());
                             break;
                         }
                     }
@@ -652,6 +659,18 @@ namespace FMS3
             }
         }
 
+        private Label getBrickLabel(int index)
+        {
+            switch (index)
+            {
+                case 0: return brickLabel0;
+                case 1: return brickLabel1;
+                case 2: return brickLabel2;
+                case 3: return brickLabel3;
+                default: return null;
+            }
+        }
+
         //
         // When the user changes the type of controller for a given row, notify the joystickManager
         //
@@ -691,11 +710,11 @@ namespace FMS3
 			if (comboBrick0.SelectedItem != null)
 			{
 				string selected = (string)comboBrick0.SelectedItem;
-				Console.WriteLine("DEBUG: comboBrick0_SelectedIndexChanged() - '" + selected + "'");
+				Logger.Debug("comboBrick0_SelectedIndexChanged() - '" + selected + "'");
 				BrickManager brickManager = BrickManager.getInstance();
 				brickPairs[0].brick = brickManager.getBrickByName(selected);
 				brickPairs[0].resetDefaults();
-				Console.WriteLine("DEBUG: comboBrick0_SelectedIndexChanged() - pair validity = " + brickPairs[0].isValidPair());
+				Logger.Debug("comboBrick0_SelectedIndexChanged() - pair validity = " + brickPairs[0].isValidPair());
 			}
 			else
 				brickPairs[0].brick = null;
@@ -722,17 +741,17 @@ namespace FMS3
         //
         private void comboBrickSelectedIndexChanged(ComboBox thisComboBox, int thisComboBoxNumber)
         {
-            if (thisComboBox.SelectedItem != null)
-            {
+            if (thisComboBox.SelectedItem != null) {
                 string selected = (string)thisComboBox.SelectedItem;
-                Console.WriteLine("DEBUG: comboBrick" + thisComboBoxNumber + "_SelectedIndexChanged() - '" + selected + "'");
+                Logger.Debug("comboBrick" + thisComboBoxNumber + "_SelectedIndexChanged() - '" + selected + "'");
                 BrickManager brickManager = BrickManager.getInstance();
                 brickPairs[thisComboBoxNumber].brick = brickManager.getBrickByName(selected);
                 brickPairs[thisComboBoxNumber].resetDefaults();
-                Console.WriteLine("DEBUG: comboBrick" + thisComboBoxNumber + "_SelectedIndexChanged() - pair validity = " + brickPairs[thisComboBoxNumber].isValidPair());
+                Logger.Debug("comboBrick" + thisComboBoxNumber + "_SelectedIndexChanged() - pair validity = " + brickPairs[thisComboBoxNumber].isValidPair());
             }
-            else
+            else {
                 brickPairs[thisComboBoxNumber].brick = null;
+            }
         }
 
         //
@@ -740,13 +759,11 @@ namespace FMS3
         //
         private void buttonToggleFreeDrive_Click(object sender, EventArgs e)
         {
-            if (mode == MODE_NOMATCH)
-            {
+            if (mode == MODE_NOMATCH) {
                 transitionMode(MODE_FREEDRIVE);
                 return;
             }
-            if (mode == MODE_FREEDRIVE)
-            {
+            else if (mode == MODE_FREEDRIVE) {
                 transitionMode(MODE_NOMATCH);
                 return;
             }
@@ -761,7 +778,7 @@ namespace FMS3
         private void checkBox_beepWhenButtonPressed(object sender, EventArgs e)
         {
             bBeepWhenButtonPressed = checkBeepForButtonPressed.Checked;
-            Console.WriteLine("DEBUG: checkBox_beepWhenButtonPressed() - bBeep=" + bBeepWhenButtonPressed);
+            Logger.Debug("checkBox_beepWhenButtonPressed() - bBeep=" + bBeepWhenButtonPressed);
         }
 
         //
@@ -769,13 +786,13 @@ namespace FMS3
         //
         private void checkShowChildWindow_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkShowChildWindow.Checked)
-            {
+            if (checkShowChildWindow.Checked) {
                 bigTimer.Show();
                 bigTimer.resizeFontsToWindow();
             }
-            else
+            else {
                 bigTimer.Hide();
+            }
         }
 
         //
@@ -785,13 +802,11 @@ namespace FMS3
         {
             string autoTimeValue = textAutoTime.Text;
             TimeSpan interval;
-            if (TimeSpan.TryParseExact(autoTimeValue, @"m\:ss", null, out interval))
-            {
+            if (TimeSpan.TryParseExact(autoTimeValue, @"m\:ss", null, out interval)) {
                 autonomousLength = interval;
-                Console.WriteLine("DEBUG: textAutoTime_Leave() - autonomousLength=" + autonomousLength);
+                Logger.Debug("textAutoTime_Leave() - autonomousLength=" + autonomousLength);
             }
-            else
-            {
+            else {
                 textAutoTime.Text = autonomousLength.ToString(@"m\:ss");
                 MessageBox.Show(autoTimeValue + " is not a valid time string (m:ss)", "Invalid Time String",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -805,13 +820,11 @@ namespace FMS3
         {
             string teleTimeValue = textTeleTime.Text;
             TimeSpan interval;
-            if (TimeSpan.TryParseExact(teleTimeValue, @"m\:ss", null, out interval))
-            {
+            if (TimeSpan.TryParseExact(teleTimeValue, @"m\:ss", null, out interval)) {
                 teleoperatedLength = interval;
-                Console.WriteLine("DEBUG: textTeleTime_Leave() - teleoperatedLength=" + teleoperatedLength);
+                Logger.Debug("textTeleTime_Leave() - teleoperatedLength=" + teleoperatedLength);
             }
-            else
-            {
+            else {
                 textTeleTime.Text = teleoperatedLength.ToString(@"m\:ss");
                 MessageBox.Show(teleTimeValue + " is not a valid time string (m:ss)", "Invalid Time String",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -832,24 +845,24 @@ namespace FMS3
         private void buttonStartPause_Click(object sender, EventArgs e)
         {
             // if we're paused, or in interperiod - resume!
-            if (mode == MODE_PAUSED || mode == MODE_INTERPERIOD)
-            {
+            if (mode == MODE_PAUSED || mode == MODE_INTERPERIOD) {
                 transitionMode(MODE_TELEOPERATED);
                 return;
             }
 
             // if we're teleoperating - pause!
-            if (mode == MODE_TELEOPERATED)
-            {
+            if (mode == MODE_TELEOPERATED) {
                 transitionMode(MODE_PAUSED);
                 return;
             }
 
             // otherwise - try to start it up!
-            if (checkAutonomous.Checked)
+            if (checkAutonomous.Checked) {
                 transitionMode(MODE_AUTONOMOUS);
-            else if (checkTeleoperated.Checked)
+            }
+            else if (checkTeleoperated.Checked) {
                 transitionMode(MODE_TELEOPERATED);
+            }
         }
 
         //
@@ -858,10 +871,8 @@ namespace FMS3
         private void allHalt()
         {
             int index = 0;
-            foreach (JoystickBrickPair thisPair in brickPairs)
-            {
-                if (brickPairs[index].brick != null)
-                {
+            foreach (JoystickBrickPair thisPair in brickPairs) {
+                if (brickPairs[index].brick != null) {
                     brickPairs[index].brick.stopAllMotors();
                     brickPairs[index].brick.stopAllPrograms();
                 }
@@ -885,46 +896,59 @@ namespace FMS3
             //
 
             // update attached joysticks
-            foreach (JoystickBrickPair thisPair in brickPairs)
-                if (thisPair.joystick != null)
+            foreach (JoystickBrickPair thisPair in brickPairs) {
+                if (thisPair.joystick != null) {
                     thisPair.joystick.readAndProcessData();
+                }
+            }
 
             // UI button toggles
             int buttonIndex = 0;
-            foreach (JoystickBrickPair thisPair in brickPairs)
-            {
-                if (thisPair.joystick != null)
-                {
+            foreach (JoystickBrickPair thisPair in brickPairs) {
+                // Health monitoring
+                if (thisPair.brick != null) {
+                    if (thisPair.brick.IOStatus == 1 && (_mainStopwatch.ElapsedMilliseconds - thisPair.brick.LastWriteStartTime) > IO_TIMEOUT_MS) {
+                        // Brick is frozen/blocked
+                        getBrickLabel(buttonIndex).BackColor = Color.Red;
+                    }
+                    else if (getBrickLabel(buttonIndex).BackColor == Color.Red) {
+                        // Reset color if no longer blocked
+                        getBrickLabel(buttonIndex).BackColor = Color.White;
+                    }
+                }
+
+                if (thisPair.joystick != null) {
                     // UI indicates if analog mode is off
                     bool toggleGuidIndicator = false;
                     bool? pressed = null;
-                    if (thisPair.joystick.getAnalogModeChange() == true)
-                    {
+                    if (thisPair.joystick.getAnalogModeChange() == true) {
                         pressed = false;
                         toggleGuidIndicator = true;
                     }
+
                     // UI indicates if someone is pressing a button
-                    if (thisPair.joystick.getAnyButtonChange() != null && thisPair.joystick.isAnalogMode())
-                    {
+                    if (thisPair.joystick.getAnyButtonChange() != null && thisPair.joystick.isAnalogMode()) {
                         pressed = false;
-                        if (thisPair.joystick.getAnyButtonChange() == true)
-                        {
+                        if (thisPair.joystick.getAnyButtonChange() == true) {
                             pressed = true;
                             // Also have the brick beep when a button is pressed [if the checkbox is set]
-                            if (mode == MODE_NOMATCH && thisPair.brick != null && bBeepWhenButtonPressed)
+                            if (mode == MODE_NOMATCH && thisPair.brick != null && bBeepWhenButtonPressed) {
                                 thisPair.brick.playTone((ushort)(440 + (110 * buttonIndex)), 200);
+                            }
                         }
                         toggleGuidIndicator = true;
                     }
+
                     // Check to see if the analog mode was changed
-                    if (thisPair.joystick.getAnalogModeChange() == false)
-                    {
+                    if (thisPair.joystick.getAnalogModeChange() == false) {
                         pressed = null;
                         toggleGuidIndicator = true;
                     }
+
                     // Change the GUID field background if analog off {or} if button pressed
-                    if (toggleGuidIndicator)
+                    if (toggleGuidIndicator) {
                         setGuidLabelBackground(buttonIndex, pressed);
+                    }
                 }
                 buttonIndex += 1;
             }
@@ -932,8 +956,7 @@ namespace FMS3
             //
             // Process active 'modes' (free driving, autonomous, etc.)
             //
-            switch (mode)
-            {
+            switch (mode) {
                 // Freedrive - no time limit, just plain direct driving
                 case MODE_FREEDRIVE:
                     doDriving();
@@ -953,22 +976,20 @@ namespace FMS3
                 // Autonomous - when the time runs out, terminate programs
                 case MODE_AUTONOMOUS:
                     // if we haven't reached the end time yet, update the timer(s)
-                    if (DateTime.Now.CompareTo(endTime) < 0)
+                    if (DateTime.Now.CompareTo(endTime) < 0) {
                         // We add 1 second so it "looks right"
                         updateTimer(endTime.Subtract(DateTime.Now).Add(TIMESPAN_ONE_SECOND));
-                    else
-                    {
+                    }
+                    else if (!checkTeleoperated.Checked) {
                         // do we have a teleop period checked? if not, just end
-                        if (!checkTeleoperated.Checked)
-                            transitionMode(MODE_NOMATCH);
-                        // otherwise - act depending on whether or not we have an interop period
-                        else
-                        {
-                            if (checkPauseBetween.Checked)
-                                transitionMode(MODE_INTERPERIOD);
-                            else
-                                transitionMode(MODE_TELEOPERATED);
-                        }
+                        transitionMode(MODE_NOMATCH);
+                    }
+                    // otherwise - act depending on whether or not we have an interop period
+                    else if (checkPauseBetween.Checked) {
+                        transitionMode(MODE_INTERPERIOD);
+                    }
+                    else {
+                        transitionMode(MODE_TELEOPERATED);
                     }
                     break;
             }
@@ -998,7 +1019,7 @@ namespace FMS3
                         // i.e.: fine motor d-pad was pressed OR released
                         if (thisPair.joystick.getFineMotorChange() != null)
                         {
-                            Console.WriteLine("DEBUG: doDriving() - getFineMotorChange=" + thisPair.joystick.getFineMotorChange());
+                            Logger.Debug("doDriving() - getFineMotorChange=" + thisPair.joystick.getFineMotorChange());
                             // default to 'released' (no direction)
                             int padDirec = 0;
                             // check to see if the change was a d-pad press [if so, pull the direction]
@@ -1008,14 +1029,16 @@ namespace FMS3
                             // set the targeted new motor values to the appropriate fine power values for the d-pad direction
                             newLMotor = JoystickBrickPair.FINE_POWER * JoystickBrickPair.FINE_LMOTOR[padDirec];
                             newRMotor = JoystickBrickPair.FINE_POWER * JoystickBrickPair.FINE_RMOTOR[padDirec];
-                            Console.WriteLine("DEBUG: doDriving() - padDirec=" + padDirec + ":newLMotor=" + newLMotor + ",newRMotor=" + newRMotor);
+                            Logger.Debug("doDriving() - padDirec=" + padDirec + ":newLMotor=" + newLMotor + ",newRMotor=" + newRMotor);
                         }
 
                         // Check the L & R sticks, see if there was a change to them; if so, set new value(s) for the associated motors
-                        if (thisPair.joystick.getLMotorChange() != null)
+                        if (thisPair.joystick.getLMotorChange() != null) {
                             newLMotor = -(int)thisPair.joystick.getLMotorChange() / JoystickBrickPair.GEAR_LEVELS[thisPair.gearIndex];
-                        if (thisPair.joystick.getRMotorChange() != null)
+                        }
+                        if (thisPair.joystick.getRMotorChange() != null) {
                             newRMotor = -(int)thisPair.joystick.getRMotorChange() / JoystickBrickPair.GEAR_LEVELS[thisPair.gearIndex];
+                        }
 
                         // Send motor values to the robot motors! B & C are the drive motors.
                         // Note, need to use negative values for normal motion (unless 'reverseMotor' toggle is on...)
@@ -1025,12 +1048,12 @@ namespace FMS3
                         {
                             if (!thisPair.reverseMotors)
                             {
-                                //Console.WriteLine("DEBUG: doDriving() - newL,!reverse=" + newLMotor);
+                                //Logger.Debug("doDriving() - newL,!reverse=" + newLMotor);
                                 thisPair.brick.setMotor(GenericBrick.MOTOR_B, newLMotor);
                             }
                             else
                             {
-                                //Console.WriteLine("DEBUG: doDriving() - newL,reverse=" + newLMotor);
+                                //Logger.Debug("doDriving() - newL,reverse=" + newLMotor);
                                 thisPair.brick.setMotor(GenericBrick.MOTOR_C, -newLMotor);
                             }
 
@@ -1040,12 +1063,12 @@ namespace FMS3
                         {
                             if (!thisPair.reverseMotors)
                             {
-                                //Console.WriteLine("DEBUG: doDriving() - newR,!reverse=" + newRMotor);
+                                //Logger.Debug("doDriving() - newR,!reverse=" + newRMotor);
                                 thisPair.brick.setMotor(GenericBrick.MOTOR_C, newRMotor);
                             }
                             else
                             {
-                                //Console.WriteLine("DEBUG: doDriving() - newR,reverse=" + newRMotor);
+                                //Logger.Debug("doDriving() - newR,reverse=" + newRMotor);
                                 thisPair.brick.setMotor(GenericBrick.MOTOR_B, -newRMotor);
                             }
 
@@ -1141,7 +1164,7 @@ namespace FMS3
                     //for (int i = 0; i < 4; i++)
                     //{
                     //	brickPairs[i].resetDefaults();
-                    //	Console.WriteLine("DEBUG: buttonToggleFreeDrive_Click() - i=" + i + ",pair=" + brickPairs[i].toString());
+                    //	Logger.Debug("buttonToggleFreeDrive_Click() - i=" + i + ",pair=" + brickPairs[i].toString());
                     //}
                     buttonToggleFreeDrive.BackColor = Color.Green;
                     playSyncSound(soundStart);
@@ -1315,8 +1338,6 @@ namespace FMS3
         {
 
         }
-
-        /******************************************************/
 
     }
 }

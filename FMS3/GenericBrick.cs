@@ -3,13 +3,13 @@
  * it would be good to rewrite this in the future :)
  */
 
-
 using MonoBrick.EV3;
 using MonoBrick.NXT;
 using MonoBrick.FiveOne;
 using System;
 using System.Threading;
 using System.Diagnostics;
+using FMS3.Utilities;
 
 namespace FMS3
 {
@@ -17,7 +17,7 @@ namespace FMS3
 	 * Wrapper class for two different MonoBrick "Brick" classes - EV3.Brick and NXT.Brick
 	 * Keeps track of state
 	 */
-	abstract class GenericBrick
+    public abstract class GenericBrick
 	{
 		// Represent brick 'states' whether connected as NXT or EV3, unconnected, once-connected-but-now-missing, etc.
 
@@ -73,87 +73,202 @@ namespace FMS3
 
 
 		//
+		protected volatile int _actualMotorA = 0;
+		protected volatile int _actualMotorB = 0;
+		protected volatile int _actualMotorC = 0;
+		protected volatile int _actualMotorD = 0;
+
 		// Constructor: name of brick, COM port to use, and whether this is an EV3 or not
 		// (MonoBrick cannot auto-detect whether or not a brick is EV3)
 		//
-		public GenericBrick(string newBrickName, string newConnName)
-		{
-			brickName = newBrickName + "";
-			connName = newConnName + "";
-
-			connectToBrick(true);
-		}
+        public GenericBrick(string newBrickName, string newConnName)
+        {
+            brickName = newBrickName + "";
+            connName = newConnName + "";
+        }
 
 		// Attempt to connect to this brick; optionally, play the connection tones to represent a successful connection
-		protected abstract void connectToBrick(bool playConnectTones);
+        protected abstract void connectToBrick(bool playConnectTones);
 
-		//
-		// Static helper method: Given a state constant, return the name. Use the 'offset' because the state constants start below zero (0)
-		//
-		public static string getStateName(int state)
-		{
-			return STATE_NAMES[state - OFFSET_STATE_NAMES];
-		}
+		protected abstract void ApplySetMotor(int whichMotor, int speed);
+        protected abstract void ApplyStopAllMotors();
+        protected abstract void ApplyStopAllPrograms();
+        protected abstract void ApplyBeep(ushort durationMs);
+        protected abstract void ApplyPlayTone(ushort frequency, ushort durationMs);
+		protected abstract void CloseConnection();
 
-		/*******************************************************************/
+		protected void IoThreadLoop()
+        {
+            Stopwatch stopwatch = new Stopwatch();
+            while (_isRunning)
+            {
+                IOStatus = 0; // IDLE
 
-		//
-		// Various getters
-		//
-		public int getState()
-		{
-			return state;
-		}
-		public string getStateName()
-		{
-			return GenericBrick.getStateName(state);
-			//return STATE_NAMES[state - OFFSET_STATE_NAMES];
-		}
-		public string getBrickName()
-		{
-			return brickName;
-		}
-		public string getConnName()
-		{
-			return connName;
-		}
+                // Handle motor commands
+                if (_desiredMotorA != _actualMotorA)
+                {
+                    try {
+                        IOStatus = 1; // WRITING
+                        LastWriteStartTime = stopwatch.ElapsedMilliseconds;
+                        ApplySetMotor(MOTOR_A, _desiredMotorA);
+                        _actualMotorA = _desiredMotorA;
+                    } catch (Exception) { state = STATE_BROKEN; }
+                }
+                if (_desiredMotorB != _actualMotorB)
+                {
+                    try {
+                        IOStatus = 1; // WRITING
+                        LastWriteStartTime = stopwatch.ElapsedMilliseconds;
+                        ApplySetMotor(MOTOR_B, _desiredMotorB);
+                        _actualMotorB = _desiredMotorB;
+                    } catch (Exception) { state = STATE_BROKEN; }
+                }
+                if (_desiredMotorC != _actualMotorC)
+                {
+                    try {
+                        IOStatus = 1; // WRITING
+                        LastWriteStartTime = stopwatch.ElapsedMilliseconds;
+                        ApplySetMotor(MOTOR_C, _desiredMotorC);
+                        _actualMotorC = _desiredMotorC;
+                    } catch (Exception) { state = STATE_BROKEN; }
+                }
+                if (_desiredMotorD != _actualMotorD)
+                {
+                    try {
+                        IOStatus = 1; // WRITING
+                        LastWriteStartTime = stopwatch.ElapsedMilliseconds;
+                        ApplySetMotor(MOTOR_D, _desiredMotorD);
+                        _actualMotorD = _desiredMotorD;
+                    } catch (Exception) { state = STATE_BROKEN; }
+                }
 
-		/*
-		 * For the "actions" below, only do the action if it's connected as an EV3 or NXT.
-		 * In each case, if connected, use the appropriate private Brick object (MonoBrick.EV3.Brick or NXT)
-		 * Use try/catch, and set brick state to BROKEN ("LOST") if an action fails.
-		 * Why might it fail? -- Battery could have died, it was powered off, taken out of range, etc.
-		 */
+                // Handle one-off commands
+                if (_requestStopAllMotors)
+                {
+                    try {
+                        IOStatus = 1; // WRITING
+                        LastWriteStartTime = stopwatch.ElapsedMilliseconds;
+                        ApplyStopAllMotors();
+                        _actualMotorA = _actualMotorB = _actualMotorC = _actualMotorD = 0;
+                    } catch (Exception) { state = STATE_BROKEN; }
+                    _requestStopAllMotors = false;
+                }
 
-		//
-		// Make the brick beep.
-		//
-		public abstract int beep(ushort durationMs);
+                if (_requestStopAllPrograms)
+                {
+                    try {
+                        IOStatus = 1; // WRITING
+                        LastWriteStartTime = stopwatch.ElapsedMilliseconds;
+                        ApplyStopAllPrograms();
+                    } catch (Exception) { state = STATE_BROKEN; }
+                    _requestStopAllPrograms = false;
+                }
 
-		//
-		// Make the brick play a particular tone.
-		//
-		public abstract int playTone(ushort frequency, ushort durationMs);
+                if (_requestBeepDuration > 0)
+                {
+                    try {
+                        IOStatus = 1; // WRITING
+                        LastWriteStartTime = stopwatch.ElapsedMilliseconds;
+                        ApplyBeep(_requestBeepDuration);
+                    } catch (Exception) { state = STATE_BROKEN; }
+                    _requestBeepDuration = 0;
+                }
 
-		//
-		// Stop all the motors. For EV3, include stopping the 'D' motor.
-		//
-		public abstract int stopAllMotors();
+                if (_requestPlayTone != null)
+                {
+                    try {
+                        IOStatus = 1; // WRITING
+                        LastWriteStartTime = stopwatch.ElapsedMilliseconds;
+                        ApplyPlayTone(_requestPlayTone.Item1, _requestPlayTone.Item2);
+                    } catch (Exception) { state = STATE_BROKEN; }
+                    _requestPlayTone = null;
+                }
 
-		//
-		// Stop all programs.
-		//
-		public abstract int stopAllPrograms();
+                System.Threading.Thread.Sleep(10); // Small delay to prevent busy-waiting
+            }
+            CloseConnection(); // Close connection when thread stops
+        }
 
-		///
-		/// Set a specific motor to a particular speed. Automatically restricts speed to -100 to 100.
-		///
-		public abstract int setMotor(int whichMotor, int speed);
+		protected void ShutdownIoThread()
+        {
+            _isRunning = false; // Signal thread to stop
+            _ioThread.Join(); // Wait for thread to finish
+        }
 
-		//
-		// When a brick is "LOST", we can try to reconnect to it; but if so, we need to close the old Connection
-		//
-		public abstract int resetBrokenState();
+        //
+        // Static helper method: Given a state constant, return the name. Use the 'offset' because the state constants start below zero (0)
+        //
+        public static string getStateName(int state)
+        {
+            return STATE_NAMES[state - OFFSET_STATE_NAMES];
+        }
+
+        /*******************************************************************/
+
+        //
+        // Various getters
+        //
+        public int getState()
+        {
+            return state;
+        }
+        public string getStateName()
+        {
+            return GenericBrick.getStateName(state);
+            //return STATE_NAMES[state - OFFSET_STATE_NAMES];
+        }
+        public string getBrickName()
+        {
+            return brickName;
+        }
+        public string getConnName()
+        {
+            return connName;
+        }
+
+        /*
+         * For the "actions" below, only do the action if it's connected as an EV3 or NXT.
+         * In each case, if connected, use the appropriate private Brick object (MonoBrick.EV3.Brick or NXT)
+         * Use try/catch, and set brick state to BROKEN ("LOST") if an action fails.
+         * Why might it fail? -- Battery could have died, it was powered off, taken out of range, etc.
+         */
+
+        //
+        // Make the brick beep.
+        //
+        public abstract int beep(ushort durationMs);
+
+        //
+        // Make the brick play a particular tone.
+        //
+        public abstract int playTone(ushort frequency, ushort durationMs);
+
+        //
+        // Stop all the motors. For EV3, include stopping the 'D' motor.
+        //
+        public abstract int stopAllMotors();
+
+        //
+        // Stop all programs.
+        //
+        public abstract int stopAllPrograms();
+
+        ///
+        /// Set a specific motor to a particular speed. Automatically restricts speed to -100 to 100.
+        ///
+        public abstract int setMotor(int whichMotor, int speed);
+
+        //
+        // When a brick is "LOST", we can try to reconnect to it; but if so, we need to close the old Connection
+        //
+        public abstract int resetBrokenState();
+
+        protected void InitializeIoThread()
+        {
+            _isRunning = true;
+            _ioThread = new Thread(IoThreadLoop);
+            _ioThread.Start();
+        }
 	}
 
 
@@ -161,14 +276,50 @@ namespace FMS3
 	{
 		private MonoBrick.EV3.Brick<MonoBrick.EV3.Sensor, MonoBrick.EV3.Sensor, MonoBrick.EV3.Sensor, MonoBrick.EV3.Sensor> ev3Brick;
 
-		private int _actualMotorA = 0;
-		private int _actualMotorB = 0;
-		private int _actualMotorC = 0;
-		private int _actualMotorD = 0;
+        public Ev3Brick(string newBrickName, string newConnName) : base(newBrickName, newConnName)
+        {
+            this.state = STATE_EV3;
+            InitializeIoThread();
+        }
 
-		public Ev3Brick(string newBrickName, string newConnName) : base(newBrickName, newConnName)
+		protected override void CloseConnection()
 		{
-			this.state = STATE_EV3;
+			ev3Brick.Connection.Close();
+		}
+
+		protected override void ApplySetMotor(int whichMotor, int speed)
+		{
+			sbyte sSpeed = (sbyte)speed;
+			switch (whichMotor)
+			{
+				case MOTOR_A: ev3Brick.MotorA.On(sSpeed); break;
+				case MOTOR_B: ev3Brick.MotorB.On(sSpeed); break;
+				case MOTOR_C: ev3Brick.MotorC.On(sSpeed); break;
+				case MOTOR_D: ev3Brick.MotorD.On(sSpeed); break;
+			}
+		}
+
+		protected override void ApplyStopAllMotors()
+		{
+			ev3Brick.MotorA.Off();
+			ev3Brick.MotorB.Off();
+			ev3Brick.MotorC.Off();
+			ev3Brick.MotorD.Off();
+		}
+
+		protected override void ApplyStopAllPrograms()
+		{
+			ev3Brick.StopProgram();
+		}
+
+		protected override void ApplyBeep(ushort durationMs)
+		{
+			ev3Brick.Beep(100, durationMs);
+		}
+
+		protected override void ApplyPlayTone(ushort frequency, ushort durationMs)
+		{
+			ev3Brick.PlayTone(100, frequency, durationMs);
 		}
 
 		protected override void connectToBrick(bool playConnectTones)
@@ -180,9 +331,9 @@ namespace FMS3
 			try
 			{
 				ev3Brick = new MonoBrick.EV3.Brick<MonoBrick.EV3.Sensor, MonoBrick.EV3.Sensor, MonoBrick.EV3.Sensor, MonoBrick.EV3.Sensor>(connName);
-				Console.WriteLine("DEBUG: got an EV3 brick");
+                Logger.Debug("got an EV3 brick");
 				ev3Brick.Connection.Open();
-				Console.WriteLine("DEBUG: opened EV3 brick");
+                Logger.Debug("opened EV3 brick");
 
 				if (playConnectTones)
 				{
@@ -197,125 +348,28 @@ namespace FMS3
 					ev3Brick.PlayTone(100, 880, 400);
 				}
 
-				state = STATE_EV3;
-				notFound = false;
-
-				_isRunning = true;
-				_ioThread = new Thread(IoThreadLoop);
-				_ioThread.Start();
+                state = STATE_EV3;
+                notFound = false;
 			}
 			catch (Exception e)
 			{
-				Console.WriteLine("DEBUG: brick=" + brickName + ",conn=" + connName + " - not an EV3");
+                Logger.Debug("brick=" + brickName + ",conn=" + connName + " - not an EV3");
 			}
 
 			if (notFound)
 			{
-				Console.WriteLine("DEBUG: Ev3Brick.connectToBrick(): brick=" + brickName + " not found");
+                Logger.Debug("Ev3Brick.connectToBrick(): brick=" + brickName + " not found");
 				state = STATE_NOTFOUND;
 			}
 
 			if (state == STATE_NOTFOUND && oldState == STATE_BROKEN)
 			{
-				Console.WriteLine("DEBUG: Ev3Brick.connectToBrick(): brick=" + brickName + " was unable to reconnect");
+                Logger.Debug("Ev3Brick.connectToBrick(): brick=" + brickName + " was unable to reconnect");
+				ShutdownIoThread();
 				state = STATE_BROKEN;
 			}
 		}
 
-		private void IoThreadLoop()
-		{
-			Stopwatch stopwatch = new Stopwatch();
-			while (_isRunning)
-			{
-				IOStatus = 0; // IDLE
-
-				// Handle motor commands
-				if (_desiredMotorA != _actualMotorA)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						ev3Brick.MotorA.On((sbyte)_desiredMotorA);
-						_actualMotorA = _desiredMotorA;
-					} catch (Exception) { state = STATE_BROKEN; }
-				}
-				if (_desiredMotorB != _actualMotorB)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						ev3Brick.MotorB.On((sbyte)_desiredMotorB);
-						_actualMotorB = _desiredMotorB;
-					} catch (Exception) { state = STATE_BROKEN; }
-				}
-				if (_desiredMotorC != _actualMotorC)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						ev3Brick.MotorC.On((sbyte)_desiredMotorC);
-						_actualMotorC = _desiredMotorC;
-					} catch (Exception) { state = STATE_BROKEN; }
-				}
-				if (_desiredMotorD != _actualMotorD)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						ev3Brick.MotorD.On((sbyte)_desiredMotorD);
-						_actualMotorD = _desiredMotorD;
-					} catch (Exception) { state = STATE_BROKEN; }
-				}
-
-				// Handle one-off commands
-				if (_requestStopAllMotors)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						ev3Brick.MotorA.Off();
-						ev3Brick.MotorB.Off();
-						ev3Brick.MotorC.Off();
-						ev3Brick.MotorD.Off();
-						_actualMotorA = _actualMotorB = _actualMotorC = _actualMotorD = 0;
-					} catch (Exception) { state = STATE_BROKEN; }
-					_requestStopAllMotors = false;
-				}
-
-				if (_requestStopAllPrograms)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						ev3Brick.StopProgram();
-					} catch (Exception) { state = STATE_BROKEN; }
-					_requestStopAllPrograms = false;
-				}
-
-				if (_requestBeepDuration > 0)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						ev3Brick.Beep(100, _requestBeepDuration);
-					} catch (Exception) { state = STATE_BROKEN; }
-					_requestBeepDuration = 0;
-				}
-
-				if (_requestPlayTone != null)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						ev3Brick.PlayTone(100, _requestPlayTone.Item1, _requestPlayTone.Item2);
-					} catch (Exception) { state = STATE_BROKEN; }
-					_requestPlayTone = null;
-				}
-
-				System.Threading.Thread.Sleep(10); // Small delay to prevent busy-waiting
-			}
-			ev3Brick.Connection.Close(); // Close connection when thread stops
-		}
 
 		public override int beep(ushort durationMs)
 		{
@@ -364,10 +418,9 @@ namespace FMS3
 		{
 			if (state == STATE_BROKEN)
 			{
-				_isRunning = false; // Signal thread to stop
-				_ioThread.Join(); // Wait for thread to finish
-				ev3Brick.Connection.Close();
+				ShutdownIoThread();
 				connectToBrick(true);
+				InitializeIoThread();
 			}
 			return state;
 		}
@@ -377,13 +430,50 @@ namespace FMS3
 	{
 		private MonoBrick.NXT.Brick<MonoBrick.NXT.Sensor, MonoBrick.NXT.Sensor, MonoBrick.NXT.Sensor, MonoBrick.NXT.Sensor> nxtBrick;
 
-		private int _actualMotorA = 0;
-		private int _actualMotorB = 0;
-		private int _actualMotorC = 0;
-
 		public NxtBrick(string newBrickName, string newConnName) : base(newBrickName, newConnName)
 		{
 			this.state = STATE_NXT;
+            InitializeIoThread();
+		}
+
+		protected override void CloseConnection()
+		{
+			nxtBrick.Connection.Close();
+		}
+
+		protected override void ApplySetMotor(int whichMotor, int speed)
+		{
+			sbyte sSpeed = (sbyte)speed;
+			switch (whichMotor)
+			{
+				case MOTOR_A: nxtBrick.MotorA.On(sSpeed); break;
+				case MOTOR_B: nxtBrick.MotorB.On(sSpeed); break;
+				case MOTOR_C: nxtBrick.MotorC.On(sSpeed); break;
+				// Special: NXT does not have a 'D' motor
+				case MOTOR_D: nxtBrick.MotorA.On(sSpeed); break; // Fallback to MotorA
+			}
+		}
+
+		protected override void ApplyStopAllMotors()
+		{
+			nxtBrick.MotorA.Off();
+			nxtBrick.MotorB.Off();
+			nxtBrick.MotorC.Off();
+		}
+
+		protected override void ApplyStopAllPrograms()
+		{
+			nxtBrick.StopProgram();
+		}
+
+		protected override void ApplyBeep(ushort durationMs)
+		{
+			nxtBrick.Beep(durationMs);
+		}
+
+		protected override void ApplyPlayTone(ushort frequency, ushort durationMs)
+		{
+			nxtBrick.PlayTone(frequency, durationMs);
 		}
 
 		protected override void connectToBrick(bool playConnectTones)
@@ -395,9 +485,9 @@ namespace FMS3
 			try
 			{
 				nxtBrick = new MonoBrick.NXT.Brick<MonoBrick.NXT.Sensor, MonoBrick.NXT.Sensor, MonoBrick.NXT.Sensor, MonoBrick.NXT.Sensor>(connName);
-				Console.WriteLine("DEBUG: got an NXT brick");
+                Logger.Debug("got an NXT brick");
 				nxtBrick.Connection.Open();
-				Console.WriteLine("DEBUG: opened NXT brick");
+                Logger.Debug("opened NXT brick");
 
 				if (playConnectTones)
 				{
@@ -413,117 +503,30 @@ namespace FMS3
 				}
 
 				string name = nxtBrick.GetBrickName();
-				Console.WriteLine("DEBUG: NXT name='" + name + "'");
+                Logger.Debug("NXT name='" + name + "'");
 
 				state = STATE_NXT;
 				notFound = false;
-
-				_isRunning = true;
-				_ioThread = new Thread(IoThreadLoop);
-				_ioThread.Start();
 			}
 			catch (Exception e)
 			{
-				Console.WriteLine("DEBUG: brick=" + brickName + ",conn=" + connName + " - not an NXT");
+                Logger.Debug("brick=" + brickName + ",conn=" + connName + " - not an NXT");
 			}
 
 			if (notFound)
 			{
-				Console.WriteLine("DEBUG: NxtBrick.connectToBrick(): brick=" + brickName + " not found");
+                Logger.Debug("NxtBrick.connectToBrick(): brick=" + brickName + " not found");
 				state = STATE_NOTFOUND;
 			}
 
 			if (state == STATE_NOTFOUND && oldState == STATE_BROKEN)
 			{
-				Console.WriteLine("DEBUG: NxtBrick.connectToBrick(): brick=" + brickName + " was unable to reconnect");
+                Logger.Debug("NxtBrick.connectToBrick(): brick=" + brickName + " was unable to reconnect");
+				ShutdownIoThread();
 				state = STATE_BROKEN;
 			}
 		}
 
-		private void IoThreadLoop()
-		{
-			Stopwatch stopwatch = new Stopwatch();
-			while (_isRunning)
-			{
-				IOStatus = 0; // IDLE
-
-				// Handle motor commands
-				if (_desiredMotorA != _actualMotorA)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						nxtBrick.MotorA.On((sbyte)_desiredMotorA);
-						_actualMotorA = _desiredMotorA;
-					} catch (Exception) { state = STATE_BROKEN; }
-				}
-				if (_desiredMotorB != _actualMotorB)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						nxtBrick.MotorB.On((sbyte)_desiredMotorB);
-						_actualMotorB = _desiredMotorB;
-					} catch (Exception) { state = STATE_BROKEN; }
-				}
-				if (_desiredMotorC != _actualMotorC)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						nxtBrick.MotorC.On((sbyte)_desiredMotorC);
-						_actualMotorC = _desiredMotorC;
-					} catch (Exception) { state = STATE_BROKEN; }
-				}
-
-				// Handle one-off commands
-				if (_requestStopAllMotors)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						nxtBrick.MotorA.Off();
-						nxtBrick.MotorB.Off();
-						nxtBrick.MotorC.Off();
-						_actualMotorA = _actualMotorB = _actualMotorC = 0;
-					} catch (Exception) { state = STATE_BROKEN; }
-					_requestStopAllMotors = false;
-				}
-
-				if (_requestStopAllPrograms)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						nxtBrick.StopProgram();
-					} catch (Exception) { state = STATE_BROKEN; }
-					_requestStopAllPrograms = false;
-				}
-
-				if (_requestBeepDuration > 0)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						nxtBrick.Beep(_requestBeepDuration);
-					} catch (Exception) { state = STATE_BROKEN; }
-					_requestBeepDuration = 0;
-				}
-
-				if (_requestPlayTone != null)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						nxtBrick.PlayTone(_requestPlayTone.Item1, _requestPlayTone.Item2);
-					} catch (Exception) { state = STATE_BROKEN; }
-					_requestPlayTone = null;
-				}
-
-				System.Threading.Thread.Sleep(10); // Small delay to prevent busy-waiting
-			}
-			nxtBrick.Connection.Close(); // Close connection when thread stops
-		}
 
 		public override int beep(ushort durationMs)
 		{
@@ -563,39 +566,72 @@ namespace FMS3
 				case MOTOR_A: _desiredMotorA = newSpeed; break;
 				case MOTOR_B: _desiredMotorB = newSpeed; break;
 				case MOTOR_C: _desiredMotorC = newSpeed; break;
-					// Special: NXT does not have a 'D' motor
+				// Special: NXT does not have a 'D' motor
 				case MOTOR_D: _desiredMotorA = newSpeed; break; // Fallback to MotorA
 			}
 			return state;
 		}
 
-		public override int resetBrokenState()
-		{
-			if (state == STATE_BROKEN)
-			{
-				_isRunning = false; // Signal thread to stop
-				_ioThread.Join(); // Wait for thread to finish
-				nxtBrick.Connection.Close();
-				connectToBrick(true);
-			}
-			return state;
-		}
+        public override int resetBrokenState()
+        {
+            if (state == STATE_BROKEN)
+            {
+                ShutdownIoThread();
+                connectToBrick(true);
+                InitializeIoThread();
+            }
+            return state;
+        }
 	}
 
 	class FiveOneBrick : GenericBrick
 	{
 		private MonoBrick.FiveOne.Brick fiveOneBrick;
 
-		private int _actualMotorA = 0;
-		private int _actualMotorB = 0;
-		private int _actualMotorC = 0;
-		private int _actualMotorD = 0;
-		// private int _actualMotorE = 0;
-		// private int _actualMotorF = 0;
-
 		public FiveOneBrick(string newBrickName, string newConnName) : base(newBrickName, newConnName)
 		{
 			this.state = STATE_51515;
+            InitializeIoThread();
+		}
+
+		protected override void CloseConnection()
+		{
+			// fiveOneBrick.Connection.Close(); // FiveOneBrick does not have a Connection.Close()
+		}
+
+		protected override void ApplySetMotor(int whichMotor, int speed)
+		{
+			sbyte sSpeed = (sbyte)speed;
+			switch (whichMotor)
+			{
+				case MOTOR_A: fiveOneBrick.MotorA.On(sSpeed); break;
+				case MOTOR_B: fiveOneBrick.MotorB.On(sSpeed); break;
+				case MOTOR_C: fiveOneBrick.MotorC.On(sSpeed); break;
+				case MOTOR_D: fiveOneBrick.MotorD.On(sSpeed); break;
+			}
+		}
+
+		protected override void ApplyStopAllMotors()
+		{
+			fiveOneBrick.MotorA.Off();
+			fiveOneBrick.MotorB.Off();
+			fiveOneBrick.MotorC.Off();
+			fiveOneBrick.MotorD.Off();
+		}
+
+		protected override void ApplyStopAllPrograms()
+		{
+			fiveOneBrick.stopPrograms();
+		}
+
+		protected override void ApplyBeep(ushort durationMs)
+		{
+			// FiveOneBrick does not have a beep method. Log a warning or ignore silently.
+		}
+
+		protected override void ApplyPlayTone(ushort frequency, ushort durationMs)
+		{
+			// FiveOneBrick does not have a PlayTone method. Log a warning or ignore silently.
 		}
 
 		protected override void connectToBrick(bool playConnectTones)
@@ -609,117 +645,26 @@ namespace FMS3
 				fiveOneBrick = new MonoBrick.FiveOne.Brick(connName);
 				state = STATE_51515;
 				notFound = false;
-
-				_isRunning = true;
-				_ioThread = new Thread(IoThreadLoop);
-				_ioThread.Start();
 			}
 			catch (Exception e)
 			{
-				Console.WriteLine("DEBUG: brick=" + brickName + ",conn=" + connName + " - not an 51515");
+                Logger.Debug("brick=" + brickName + ",conn=" + connName + " - not an 51515");
 			}
 
 			if (notFound)
 			{
-				Console.WriteLine("DEBUG: FiveOneBrick.connectToBrick(): brick=" + brickName + " not found");
+                Logger.Debug("FiveOneBrick.connectToBrick(): brick=" + brickName + " not found");
 				state = STATE_NOTFOUND;
 			}
 
 			if (state == STATE_NOTFOUND && oldState == STATE_BROKEN)
 			{
-				Console.WriteLine("DEBUG: FiveOneBrick.connectToBrick(): brick=" + brickName + " was unable to reconnect");
+                Logger.Debug("FiveOneBrick.connectToBrick(): brick=" + brickName + " was unable to reconnect");
+				ShutdownIoThread();
 				state = STATE_BROKEN;
 			}
 		}
 
-		private void IoThreadLoop()
-		{
-			Stopwatch stopwatch = new Stopwatch();
-			while (_isRunning)
-			{
-				IOStatus = 0; // IDLE
-
-				// Handle motor commands
-				if (_desiredMotorA != _actualMotorA)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						fiveOneBrick.MotorA.On((sbyte)_desiredMotorA);
-						_actualMotorA = _desiredMotorA;
-					} catch (Exception) { state = STATE_BROKEN; }
-				}
-				if (_desiredMotorB != _actualMotorB)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						fiveOneBrick.MotorB.On((sbyte)_desiredMotorB);
-						_actualMotorB = _desiredMotorB;
-					} catch (Exception) { state = STATE_BROKEN; }
-				}
-				if (_desiredMotorC != _actualMotorC)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						fiveOneBrick.MotorC.On((sbyte)_desiredMotorC);
-						_actualMotorC = _desiredMotorC;
-					} catch (Exception) { state = STATE_BROKEN; }
-				}
-				if (_desiredMotorD != _actualMotorD)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						fiveOneBrick.MotorD.On((sbyte)_desiredMotorD);
-						_actualMotorD = _desiredMotorD;
-					} catch (Exception) { state = STATE_BROKEN; }
-				}
-
-				// Handle one-off commands
-				if (_requestStopAllMotors)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						fiveOneBrick.MotorA.Off();
-						fiveOneBrick.MotorB.Off();
-						fiveOneBrick.MotorC.Off();
-						fiveOneBrick.MotorD.Off();
-						_actualMotorA = _actualMotorB = _actualMotorC = _actualMotorD = 0;
-					} catch (Exception) { state = STATE_BROKEN; }
-					_requestStopAllMotors = false;
-				}
-
-				if (_requestStopAllPrograms)
-				{
-					try {
-						IOStatus = 1; // WRITING
-						LastWriteStartTime = stopwatch.ElapsedMilliseconds;
-						fiveOneBrick.stopPrograms();
-					} catch (Exception) { state = STATE_BROKEN; }
-					_requestStopAllPrograms = false;
-				}
-
-				if (_requestBeepDuration > 0)
-				{
-					// FiveOneBrick does not have a beep method.
-					// Handle as appropriate, e.g., log a warning or ignore silently.
-					_requestBeepDuration = 0;
-				}
-
-				if (_requestPlayTone != null)
-				{
-					// FiveOneBrick does not have a PlayTone method.
-					// Handle as appropriate, e.g., log a warning or ignore silently.
-					_requestPlayTone = null;
-				}
-
-				System.Threading.Thread.Sleep(10); // Small delay to prevent busy-waiting
-			}
-			// fiveOneBrick.Connection.Close(); // FiveOneBrick does not have a Connection.Close()
-		}
 
 
 		public override int beep(ushort durationMs)
@@ -765,16 +710,15 @@ namespace FMS3
 			return state;
 		}
 
-		public override int resetBrokenState()
-		{
-			if (state == STATE_BROKEN)
-			{
-				_isRunning = false; // Signal thread to stop
-				_ioThread.Join(); // Wait for thread to finish
-				// fiveOneBrick.Connection.Close(); // FiveOneBrick does not have Connection.Close()
-				connectToBrick(true);
-			}
-			return state;
-		}
+        public override int resetBrokenState()
+        {
+            if (state == STATE_BROKEN)
+            {
+                ShutdownIoThread();
+                connectToBrick(true);
+                InitializeIoThread();
+            }
+            return state;
+        }
 	}
 }
