@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-	<TargetFramework>net6.0-windows</TargetFramework>
+	<TargetFramework>net10.0-windows7.0</TargetFramework>
 	<OutputType>WinExe</OutputType>
 	<PublishUrl>publish\</PublishUrl>
 	<Install>true</Install>
@@ -20,6 +20,7 @@
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<UseWindowsForms>true</UseWindowsForms>
 	<ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+	<StartupObject>FMS3.Program</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
 	<OutputPath>bin\x86\Debug\</OutputPath>
@@ -133,10 +134,10 @@
   <ItemGroup>
 	<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
 	<PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-	<PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.3.310801">
+	<PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.421302">
 	  <PrivateAssets>all</PrivateAssets>
 	</PackageReference>
-    <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0.0" />
+	<PackageReference Include="Microsoft.Windows.Compatibility" Version="10.0.9" />
     <PackageReference Include="NLog" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
