@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-	<TargetFramework>net6.0-windows</TargetFramework>
+	<TargetFramework>net10.0-windows7.0</TargetFramework>
 	<OutputType>WinExe</OutputType>
 	<PublishUrl>publish\</PublishUrl>
 	<Install>true</Install>
@@ -20,6 +20,7 @@
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<UseWindowsForms>true</UseWindowsForms>
 	<ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+	<StartupObject>FMS3.Program</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
 	<OutputPath>bin\x86\Debug\</OutputPath>
