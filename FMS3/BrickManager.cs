@@ -54,8 +54,12 @@ namespace FMS3
 			List<string> connBricks = new List<string>();
 			List<string> attachedBricks = getListOfAttachedBricks();
 			foreach (string thisBrick in attachedBricks)
-				if (thisBrick.Contains("["))
-					connBricks.Add(thisBrick);
+			{
+                if (thisBrick.Contains("["))
+                {
+                    connBricks.Add(thisBrick);
+                }
+            }
 
 			return connBricks;
 		}

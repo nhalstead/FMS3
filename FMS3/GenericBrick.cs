@@ -279,6 +279,7 @@ namespace FMS3
         public Ev3Brick(string newBrickName, string newConnName) : base(newBrickName, newConnName)
         {
             this.state = STATE_EV3;
+            connectToBrick(true);
             InitializeIoThread();
         }
 
