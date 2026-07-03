@@ -385,11 +385,15 @@ namespace FMS3
                 GenericBrick reconnBrick = brickManager.getBrickByName(thisBrick);
                 int reconnState = reconnBrick.resetBrokenState();
                 if (reconnState > 0)
+                {
                     MessageBox.Show("Reconnected successfully!", "Success",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
                 else
+                {
                     MessageBox.Show("The brick was not recognized", "Error when connecting",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
 
             // 2. Only attempt to make a new connection if it's not already been connected (check for '[')
@@ -756,7 +760,7 @@ namespace FMS3
         }
 
         //
-        // Handle when user clicks on 'Toggle free-drive'. Only works when not in a match, or currently in free drive
+        // Handle when the user clicks on 'Toggle free-drive'. Only works when not in a match, or currently in free drive
         //
         private void buttonToggleFreeDrive_Click(object sender, EventArgs e)
         {
@@ -1339,6 +1343,5 @@ namespace FMS3
         {
 
         }
-
     }
 }
