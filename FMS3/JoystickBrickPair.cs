@@ -77,10 +77,13 @@ namespace FMS3
 		{
 			//Logger.Debug("DEBUG: isValidPair()1 - " + joystick + "," + brick);
 			if (brick != null)
-				Logger.Debug("DEBUG: isValidPair()2 - " + brick.getState());
-			 */
+			{
+                Logger.Debug("DEBUG: isValidPair()2 - " + brick.getState());
+            }
 			if (joystick != null && brick != null && brick.getState() > 0)
-				return true;
+			{
+                return true;
+            }
 			return false;
 		}
 
