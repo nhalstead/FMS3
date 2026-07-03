@@ -132,7 +132,7 @@ namespace FMS3
 			return null;
 		}
 
-		public GenericBrick getBrickByName(string name, bool isEv3)
+		public GenericBrick getBrickByName(string name, bool isEv3, bool isFiveOne)
 		{
 			// is it already connected?
 			if (namesToBricks.ContainsKey(name))
@@ -144,9 +144,23 @@ namespace FMS3
 			// what is the COM port
 			string newComPort = namesToComms[name];
 
+			GenericBrick newBrick = null;
+
+			if (isEv3)
+			{
+				newBrick = new Ev3Brick(name, newComPort);
+			}
+			else if (isFiveOne)
+			{
+				newBrick = new FiveOneBrick(name, newComPort);
+			}
+			else
+			{
+				newBrick = new NxtBrick(name, newComPort);
+			}
+
 			// try to connect
-			GenericBrick newBrick = new GenericBrick(name, newComPort, isEv3);
-			if (newBrick.getState() > 0)
+			if (newBrick != null && newBrick.getState() > 0)
 			{
 				// add the brick to the dictionary
 				namesToBricks.Add(name, newBrick);
