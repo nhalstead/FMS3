@@ -664,10 +664,10 @@ namespace FMS3
         {
             switch (index)
             {
-                case 0: return brickLabel0;
-                case 1: return brickLabel1;
-                case 2: return brickLabel2;
-                case 3: return brickLabel3;
+                case 0: return guidLabel0;
+                case 1: return guidLabel1;
+                case 2: return guidLabel2;
+                case 3: return guidLabel3;
                 default: return null;
             }
         }
