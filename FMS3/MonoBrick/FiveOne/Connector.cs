@@ -39,7 +39,7 @@ public class Connector  {
      */
     public void inject() {
         interrupt();
-        string payload = File.ReadAllText ("FiveOne" + Path.DirectorySeparatorChar + "payload.py");
+        string payload = File.ReadAllText ("MonoBrick" + Path.DirectorySeparatorChar + "FiveOne" + Path.DirectorySeparatorChar + "payload.py");
         send(payload);
     }
 

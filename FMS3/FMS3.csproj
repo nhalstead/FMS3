@@ -60,7 +60,7 @@
 	<None Update="libusb-1.0.la">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>
-	<None Update="FiveOne\payload.py">
+	<None Update="MonoBrick\FiveOne\payload.py">
 	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	</None>
   </ItemGroup>
